@@ -10,38 +10,51 @@ public class HybridImages extends PApplet {
 	PImage lpImage;
 	PImage hpImage;
 	PImage resImage;
+	PImage halfResImage;
 
 	public void setup() {
 		image0 = loadImage("../data/retrato1.jpg");
+		image0.resize(120, 120);
+		image0.filter(GRAY);
+
 		image1 = loadImage("../data/retrato2.jpg");
+		image1.resize(120, 120);
+		image1.filter(GRAY);
+		
 		// Lowpass filter is a 3x3 gaussian filter
 		float[][] lowPassFilter = { 
 				{ 1 / 16f, 1 / 8f, 1 / 16f },
-				{ 1 / 8f, 1 / 16f, 1 / 8f }, 
+				{ 1 / 8f, 1 / 4f, 1 / 8f }, 
 				{ 1 / 16f, 1 / 8f, 1 / 16f } };
+		float[][] lowPassFilter2 = { 
+				{ 2 / 16f, 2 / 8f, 2 / 16f },
+				{ 1 / 8f, 1 / 4f, 2 / 8f }, 
+				{ 2 / 16f, 2 / 8f, 2 / 16f } };
+		
+		
 		// High-pass filter is calculates as 1- Lowwpass
 		float[][] highPassFilter = { 
-				{ -1 / 16f, -1 / 8f, -1 / 16f },
-				{ -1 / 8f, 3 / 4f, -1 / 8f }, 
-				{ -1 / 16f, -1 / 8f, -1 / 16f } };
+				{ 15 / 16f, 7 / 8f, 15 / 16f },
+				{ 7 / 8f, 3 / 4f, 7 / 8f }, 
+				{ 15 / 16f, 7 / 8f, 15 / 16f } };
 
 		lpImage = convolution(lowPassFilter, image0);
-		hpImage = convolution(highPassFilter, image0);
+		hpImage = convolution(highPassFilter, image1);
 
 		resImage = sumImages(lpImage, hpImage);
+		//halfResImage = 
 
 		size(image0.width * 4, 50 + image0.height * 2);
-
-	}
-
-	public void draw() {
+		
 		image(image0, 0, 10);
 		image(image1, image0.width, 10);
 		image(lpImage, 2 * image0.width, 10);
 		image(hpImage, 3 * image0.width, 10);
 
-		imageMode(PApplet.CENTER);
-		image(resImage, width / 2, height / 2);
+		//ode(PApplet.CENTER);
+		image(resImage, 0, image0.height + 50);
+		resImage.resize(resImage.width/2, resImage.height/2);
+		image(resImage, image0.width+100, image0.height + 50);
 
 	}
 
@@ -96,21 +109,26 @@ public class HybridImages extends PApplet {
 		return color(rtotal, gtotal, btotal);
 	}
 
-	private PImage sumImages(PImage image0, PImage image1) {
-		PImage output = createImage(image0.width, image0.height, PApplet.RGB);
+	private PImage sumImages(PImage lpimage, PImage hpimage) {
+		PImage output = createImage(lpimage.width, lpimage.height, PApplet.RGB);
 		output.loadPixels();
 		// Begin our loop for every pixel
 		for (int x = 0; x < output.width; x++) {
 			for (int y = 0; y < output.height; y++) {
 				int loc = x + y * output.width;
-				int pixelValue = (int) (brightness(image0.pixels[loc]) + brightness(image1.pixels[loc]));
-				pixelValue = constrain(pixelValue, 0, 255);
+				float r = (red(lpimage.pixels[loc])*0.5f + red(hpimage.pixels[loc])*0.5f);
+				float g = (green(lpimage.pixels[loc])*0.5f + green(hpimage.pixels[loc])*0.5f);
+				float b = (blue(lpimage.pixels[loc])*0.5f + blue(hpimage.pixels[loc])*0.5f);
+
+				r = constrain(r, 0, 255);
+				g = constrain(g, 0, 255);
+				b = constrain(b, 0, 255);
 				
-				output.pixels[loc] = pixelValue;
+				output.pixels[loc] = color(r, g, b);
 			}
 		}
 		output.updatePixels();
 		return output;
 	}
-
+	
 }
